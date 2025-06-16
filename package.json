@@ -7,7 +7,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/你的仓库地址.git"
+    "url": "https://github.com/jo4rchy/koishi-plugin-bf2042-server-gametools"
   },
   "keywords": ["servers", "bf2042"],
   "koishi": {
