@@ -1,19 +1,25 @@
 {
   "name": "koishi-plugin-bf2042-server-gametools",
+  "description": "bf2042服务器状态查询工具",
   "version": "1.0.0",
-  "peerDependencies": {
-    "koishi": "^4.0.0"
-  },
+  "main": "lib/index.js",
+  "typings": "lib/index.d.ts",
+  "files": [
+    "lib",
+    "dist"
+  ],
   "license": "MIT",
+  "homepage": "https://github.com/jo4rchy/koishi-plugin-bf2042-server-gametools",
   "repository": {
     "type": "git",
-    "url": "https://github.com/jo4rchy/koishi-plugin-bf2042-server-gametools"
+    "url": "git+https://github.com/jo4rchy/koishi-plugin-bf2042-server-gametools.git"
   },
-  "keywords": ["servers", "bf2042"],
-  "koishi": {
-    "description": {
-      "zh": "查询 BF2042 服务器列表和详情",
-      "en": "Fetch popular BF2042 servers and details"
-    }
+  "keywords": [
+    "chatbot",
+    "koishi",
+    "plugin"
+  ],
+  "peerDependencies": {
+    "koishi": "^4.17.11"
   }
 }
