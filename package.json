@@ -1,7 +1,7 @@
 {
   "name": "koishi-plugin-bf2042-server-gametools",
   "description": "战地2042服务器查询工具",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [
@@ -12,10 +12,21 @@
   "keywords": [
     "chatbot",
     "koishi",
-    "plugin"
+    "plugin",
+    "bf2042"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jo4rchy/koishi-plugin-bf2042-server-gametools"
+  },
   "peerDependencies": {
-    "koishi": "^4.18.7",
-    "axios": "^1.6.0"
+    "axios": "^1.6.0",
+    "koishi": "^4.18.7"
+  },
+  "koishi": {
+    "description": "使用 GameTools 查询 BF2042 服务器状态",
+    "author": "joo",
+    "license": "MIT",
+    "service": false
   }
 }

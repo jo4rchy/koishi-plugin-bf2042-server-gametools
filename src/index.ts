@@ -1,8 +1,9 @@
+
 import { Context, Schema } from 'koishi'
 import axios from 'axios'
 
 export const name = 'bf2042-server'
-export const usage = '查询 BF2042 服务器状态的插件'
+export const usage = '查询 BF2042 服务器状态的插件，支持自定义命令列表'
 
 const BASE_URL = 'https://api.gametools.network/bf2042'
 
@@ -55,9 +56,7 @@ const modeCodes: Record<string, string> = {
   'Conquest large': '大型征服',
 }
 
-export async function fetchServerDetail(
-  options: { serverName?: string; serverID?: string }
-): Promise<string> {
+export async function fetchServerDetail(options: { serverName?: string; serverID?: string }): Promise<string> {
   let url = ''
   if (options.serverName) {
     url = `${BASE_URL}/detailedserver/?name=${encodeURIComponent(options.serverName)}`
@@ -80,22 +79,33 @@ export async function fetchServerDetail(
   const maxPlayers = result.maxPlayers ?? 0
   const regionName = regionCodes[result.region] ?? result.region
   const owner = result.owner?.name ?? ''
-  const currentMapUrl = result.currentMapImage ?? ''
+  const currentMapId = result.currentMapId ?? ''
 
-  let serverStatus = `服务器名称: ${name}\n` +
-                     `状态: ${playerAmount}/${maxPlayers} - ${modeName}\n` +
-                     `地图: ${mapName} \n` +
-                     `地区: ${regionName}\n` +
-                     `服主: ${owner}\n`
+  let serverStatus = `[服务器] ${name}\n` +
+                     `[地区] ${regionName}\n` +
+                     `[服主] ${owner}\n`  +
+                     `[状态] ${playerAmount}/${maxPlayers} - ${modeName}\n` +
+                     `[当前地图] ${mapName} \n`
 
-  if (Array.isArray(rotation)) {
-    serverStatus += '地图轮换:\n'
+  let currentIndex = -1
+  let rotationList = ''
+  if (Array.isArray(rotation) && rotation.length > 0) {
     rotation.forEach((r, idx) => {
       const rMap = mapCodes[r.mapname] ?? r.mapname
       const rMode = modeCodes[r.mode] ?? r.mode
-      const rImg = r.image ?? ''
-      serverStatus += `  ${idx + 1}. ${rMap} - ${rMode}\n`
+      rotationList += `  ${idx + 1} - ${rMap} - ${rMode}\n`
+      if (r.mapname === result.currentMap || r.mapname === result.currentMapId || r.mapname === currentMapId) {
+        currentIndex = idx
+      }
     })
+    if (currentIndex !== -1) {
+      const nextIdx = (currentIndex + 1) % rotation.length
+      const next = rotation[nextIdx]
+      const nextMapName = mapCodes[next.mapname] ?? next.mapname
+      serverStatus += `[当前轮换] ${currentIndex + 1}/${rotation.length}\n`
+      serverStatus += `[下张地图] ${nextMapName}\n`
+    }
+    serverStatus += '[地图轮换]\n' + rotationList
   }
 
   return serverStatus
@@ -113,18 +123,38 @@ export async function fetchServers(name = '', region = 'all', limit = 10): Promi
     const playerAmount = s.playerAmount ?? 0
     const maxPlayers = s.maxPlayers ?? 0
     const serverName = s.prefix ?? 'None'
-    const mapUrl = s.url ?? 'None'
-
-    return `${serverName}\n${playerAmount}/${maxPlayers} - ${mapName} - ${modeName} - ${regionName}`
+    return `[${serverName}]\n[${playerAmount}/${maxPlayers} - ${mapName} - ${modeName} - ${regionName}]`
   })
 
   return `当前热门服务器: \n` + lines.join('\n\n')
 }
 
-export interface Config {}
-export const Config: Schema<Config> = Schema.object({})
+export interface Config {
+  serverList: {
+    name: string
+    id: string
+  }[]
+}
 
-export function apply(ctx: Context) {
+export const Config: Schema<Config> = Schema.object({
+  serverList: Schema.array(
+    Schema.object({
+      name: Schema.string().description('命令名（例如 epic）'),
+      id: Schema.string().description('对应的 Server ID'),
+    })
+  ).description('服务器命令列表'),
+})
+
+export function apply(ctx: Context, config: Config) {
+  ctx.command('机器人', '显示帮助信息')
+    .action(() => {
+      const dynamicCmds = (config.serverList || []).map(item => `/${item.name}`).join('  ')
+      return `欢迎使用 BF2042 查询机器人！\n\n` +
+             `以下指令可用：\n` +
+             ` /服务器 [名字] - 查询服务器状态或热门服务器\n` +
+             ` ${dynamicCmds ? dynamicCmds + '\n' : ''}`
+    })
+
   ctx.command('服务器 [serverName:text]', '查询 BF2042 服务器状态')
     .action(async ({ session }, serverName) => {
       try {
@@ -138,48 +168,26 @@ export function apply(ctx: Context) {
         return '查询出错了，请稍后再试。'
       }
     })
-  ctx.command('1服', '查询 DragonMa 1服状态')
-    .action(async ({ session }) => {
-      try {
-        // 假设你有一个固定的 serverId 或者从配置获取
-        const serverId = 'ce0b5f7f-dda9-4728-a415-7f025ae5623f'
-        await fetchServerDetail({ serverID: serverId }).then((msg) => session.send(msg))
-      } catch (err) {
-        console.error(err)
-        return '查询出错了，请稍后再试。'
-      }
-    })
-  ctx.command('epic', '查询 EPIC 服状态')
-    .action(async ({ session }) => {
-      try {
-        // 假设你有一个固定的 serverId 或者从配置获取
-        const serverId = '78d78b83-32bb-4022-8b10-6ffcadf79e8a'
-        await fetchServerDetail({ serverID: serverId }).then((msg) => session.send(msg))
-      } catch (err) {
-        console.error(err)
-        return '查询出错了，请稍后再试。'
-      }
-    })
-    ctx.command('nohack', '查询 No Hack 服状态')
-    .action(async ({ session }) => {
-      try {
-        // 假设你有一个固定的 serverId 或者从配置获取
-        const serverId = '23bd5d5a-4485-403d-b2ed-9fcdf57e91c0'
-        await fetchServerDetail({ serverID: serverId }).then((msg: string) => session.send(msg))
-      } catch (err) {
-        console.error(err)
-        return '查询出错了，请稍后再试。'
-      }
-    })
-  ctx.command('机器人', '2042服务器查询机器人指令教程')
-    .action(async ({ session }) => {
-      return `欢迎使用 BF2042 服务器查询机器人！\n\n` +
-             `以下是可用的指令：\n` +
-             ` /服务器  -  查询指定服务器状态，若不指定则返回热门服务器。\n` +
-             ` /1服  -  查询 DragonMa 1服状态。\n` +
-             ` /epic  -  查询 EPIC 服状态。\n` +
-             ` /nohack  -  查询 No Hack 服状态。\n` +
-             ` /机器人  -  显示此帮助信息。`
-    })
+
+  for (const { name, id } of config.serverList || []) {
+    if (!name || !id) {
+      console.warn(`[bf2042] 跳过无效命令项: name=${name}, id=${id}`)
+      continue
+    }
+
+    ctx.command(name, `查询 ${name} 服务器状态`)
+      .action(async ({ session }) => {
+        try {
+          console.log(`[bf2042] 执行指令 /${name} -> ${id}`)
+          const msg = await fetchServerDetail({ serverID: id })
+          return msg
+        } catch (err) {
+          console.error(`[bf2042] 查询失败: ${err}`)
+          return '查询出错了，请稍后再试。'
+        }
+      })
+  }
+
+
+
 }
-  
