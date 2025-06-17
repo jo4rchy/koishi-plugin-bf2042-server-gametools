@@ -74,7 +74,10 @@ export async function fetchServerDetail(options: { serverName?: string; serverID
     ? modeCodes[rotation[0].mode] ?? rotation[0].mode
     : modeCodes[result.mode] ?? result.mode
 
-  const name = result.serverInfo?.serverName ?? result.prefix ?? ''
+  let name = result.serverInfo?.serverName ?? result.prefix ?? ''
+  if (name.includes('discord.gg')) {
+    name = name.replace(/discord\.gg/gi, '##########')
+  }
   const playerAmount = result.playerAmount ?? 0
   const maxPlayers = result.maxPlayers ?? 0
   const regionName = regionCodes[result.region] ?? result.region
@@ -122,7 +125,10 @@ export async function fetchServers(name = '', region = 'all', limit = 10): Promi
     const modeName = modeCodes[s.mode] ?? s.mode
     const playerAmount = s.playerAmount ?? 0
     const maxPlayers = s.maxPlayers ?? 0
-    const serverName = s.prefix ?? 'None'
+    let serverName = s.prefix ?? 'None'
+    if (serverName.includes('discord.gg')) {
+      serverName = serverName.replace(/discord\.gg/gi, '##########')
+    }
     return `[${serverName}]\n[${playerAmount}/${maxPlayers} - ${mapName} - ${modeName} - ${regionName}]`
   })
 
@@ -149,10 +155,12 @@ export function apply(ctx: Context, config: Config) {
   ctx.command('机器人', '显示帮助信息')
     .action(() => {
       const dynamicCmds = (config.serverList || []).map(item => `/${item.name}`).join('  ')
-      return `欢迎使用 BF2042 查询机器人！\n\n` +
-             `以下指令可用：\n` +
-             ` /服务器 [名字] - 查询服务器状态或热门服务器\n` +
-             ` ${dynamicCmds ? dynamicCmds + '\n' : ''}`
+      return `欢迎使用 BF2042 服务器查询机器人！\n\n` +
+        `基础指令：\n` +
+        ` /服务器 [服务器名称(可选)]\n` +
+        ` /机器人\n` +
+        `\n查询特定服务器:\n` +
+        (dynamicCmds ? dynamicCmds.split('  ').map(cmd => ` ${cmd}`).join('\n') + '\n' : '')
     })
 
   ctx.command('服务器 [serverName:text]', '查询 BF2042 服务器状态')
